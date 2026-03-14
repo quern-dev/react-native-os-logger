@@ -12,7 +12,7 @@ import {
 export default function App() {
   useEffect(() => {
     configure('com.quern.oslogger.example', 'js');
-    logInfo('App mounted');
+    logDefault('App mounted');
   }, []);
 
   return (
