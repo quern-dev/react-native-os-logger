@@ -31,7 +31,25 @@ No additional setup needed.
 
 ## Usage
 
-### Basic setup
+### Drop-in console.log replacement
+
+```typescript
+import { patchConsole } from '@quern/react-native-os-logger';
+
+// Call once at app startup — that's it
+patchConsole('com.myapp');
+
+// All console methods now route through os_log
+console.log('This appears in Console.app');    // → OS_LOG_TYPE_DEFAULT
+console.info('Info message');                   // → OS_LOG_TYPE_INFO
+console.debug('Debug message');                 // → OS_LOG_TYPE_DEBUG
+console.warn('Warning!');                       // → OS_LOG_TYPE_ERROR
+console.error('Something broke');               // → OS_LOG_TYPE_ERROR
+```
+
+Original console methods are preserved — logs still appear in Metro as usual.
+
+### Explicit API
 
 ```typescript
 import { configure, logInfo, logError } from '@quern/react-native-os-logger';
@@ -96,6 +114,10 @@ Configure the logger with a reverse-DNS subsystem identifier and a category. Cal
 ### `createLogger(subsystem: string, category: string): Logger`
 
 Returns an object with `default`, `info`, `debug`, `error`, `fault`, and `log` methods.
+
+### `patchConsole(subsystem: string, category?: string): void`
+
+Patches `console.log/info/debug/warn/error` to route through os_log. Original methods are preserved. Category defaults to `"console"`. Call once at startup.
 
 ## Requirements
 
