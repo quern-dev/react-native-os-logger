@@ -13,6 +13,16 @@ export default defineConfig([
     },
   },
   {
+    files: ['**/*.config.js'],
+    languageOptions: {
+      globals: {
+        module: 'readonly',
+        require: 'readonly',
+        __dirname: 'readonly',
+      },
+    },
+  },
+  {
     ignores: ['node_modules/', 'lib/'],
   },
 ]);
