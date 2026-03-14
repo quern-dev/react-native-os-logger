@@ -2,53 +2,61 @@ import NativeModule from './NativeReactNativeOsLogger';
 
 export type LogLevel = 'default' | 'info' | 'debug' | 'error' | 'fault';
 
-let configured = false;
+export interface Logger {
+  default: (message: string) => void;
+  info: (message: string) => void;
+  debug: (message: string) => void;
+  error: (message: string) => void;
+  fault: (message: string) => void;
+  log: (level: LogLevel, message: string) => void;
+}
+
+const DEFAULT_KEY = '_default';
 
 /**
- * Configure the logger with a subsystem and category.
+ * Configure the default logger with a subsystem and category.
  * Call this once at app startup before logging.
  *
  * @param subsystem - Reverse-DNS identifier (e.g. "com.myapp")
  * @param category - Log category (e.g. "networking", "ui", "js")
  */
 export function configure(subsystem: string, category: string): void {
-  NativeModule.configure(subsystem, category);
-  configured = true;
+  NativeModule.configureLogger(DEFAULT_KEY, subsystem, category);
 }
 
 /**
  * Log at the "default" level (os_log_default / Log.i).
  */
 export function logDefault(message: string): void {
-  NativeModule.logDefault(message);
+  NativeModule.logDefault(DEFAULT_KEY, message);
 }
 
 /**
  * Log at the "info" level (os_log_info / Log.i).
  */
 export function logInfo(message: string): void {
-  NativeModule.logInfo(message);
+  NativeModule.logInfo(DEFAULT_KEY, message);
 }
 
 /**
  * Log at the "debug" level (os_log_debug / Log.d).
  */
 export function logDebug(message: string): void {
-  NativeModule.logDebug(message);
+  NativeModule.logDebug(DEFAULT_KEY, message);
 }
 
 /**
  * Log at the "error" level (os_log_error / Log.e).
  */
 export function logError(message: string): void {
-  NativeModule.logError(message);
+  NativeModule.logError(DEFAULT_KEY, message);
 }
 
 /**
  * Log at the "fault" level (os_log_fault / Log.wtf).
  */
 export function logFault(message: string): void {
-  NativeModule.logFault(message);
+  NativeModule.logFault(DEFAULT_KEY, message);
 }
 
 /**
@@ -75,21 +83,44 @@ export function log(level: LogLevel, message: string): void {
 }
 
 /**
- * Create a logger instance pre-configured with a subsystem and category.
- * Useful for creating module-scoped loggers.
+ * Create a logger instance with its own subsystem and category.
+ * Each logger gets a separate os_log_t (iOS) / Log tag (Android),
+ * so logs can be filtered independently.
+ *
+ * @param subsystem - Reverse-DNS identifier (e.g. "com.myapp")
+ * @param category - Log category (e.g. "networking", "ui")
  */
-export function createLogger(subsystem: string, category: string) {
-  if (!configured) {
-    configure(subsystem, category);
-  }
+export function createLogger(subsystem: string, category: string): Logger {
+  const key = `${subsystem}:${category}`;
+  NativeModule.configureLogger(key, subsystem, category);
+
+  const logForKey = (level: LogLevel, message: string): void => {
+    switch (level) {
+      case 'default':
+        NativeModule.logDefault(key, message);
+        break;
+      case 'info':
+        NativeModule.logInfo(key, message);
+        break;
+      case 'debug':
+        NativeModule.logDebug(key, message);
+        break;
+      case 'error':
+        NativeModule.logError(key, message);
+        break;
+      case 'fault':
+        NativeModule.logFault(key, message);
+        break;
+    }
+  };
 
   return {
-    default: logDefault,
-    info: logInfo,
-    debug: logDebug,
-    error: logError,
-    fault: logFault,
-    log,
+    default: (message: string) => NativeModule.logDefault(key, message),
+    info: (message: string) => NativeModule.logInfo(key, message),
+    debug: (message: string) => NativeModule.logDebug(key, message),
+    error: (message: string) => NativeModule.logError(key, message),
+    fault: (message: string) => NativeModule.logFault(key, message),
+    log: logForKey,
   };
 }
 
@@ -124,9 +155,7 @@ export function patchConsole(
   if (patched) return;
   patched = true;
 
-  if (!configured) {
-    configure(subsystem, category);
-  }
+  const logger = createLogger(subsystem, category);
 
   const originalLog = console.log;
   const originalInfo = console.info;
@@ -136,26 +165,26 @@ export function patchConsole(
 
   console.log = (...args: unknown[]) => {
     originalLog.apply(console, args);
-    logDefault(argsToString(args));
+    logger.default(argsToString(args));
   };
 
   console.info = (...args: unknown[]) => {
     originalInfo.apply(console, args);
-    logInfo(argsToString(args));
+    logger.info(argsToString(args));
   };
 
   console.debug = (...args: unknown[]) => {
     originalDebug.apply(console, args);
-    logDebug(argsToString(args));
+    logger.debug(argsToString(args));
   };
 
   console.warn = (...args: unknown[]) => {
     originalWarn.apply(console, args);
-    logError(argsToString(args));
+    logger.error(argsToString(args));
   };
 
   console.error = (...args: unknown[]) => {
     originalError.apply(console, args);
-    logError(argsToString(args));
+    logger.error(argsToString(args));
   };
 }

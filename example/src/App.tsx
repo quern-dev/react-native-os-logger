@@ -1,15 +1,11 @@
 import { useEffect } from 'react';
 import { Text, View, StyleSheet, Button } from 'react-native';
-import {
-  patchConsole,
-  logDefault,
-  logInfo,
-  logDebug,
-  logError,
-  logFault,
-} from '@quern/react-native-os-logger';
+import { patchConsole, createLogger } from '@quern/react-native-os-logger';
 
 patchConsole('com.quern.oslogger.example', 'console');
+
+const netLogger = createLogger('com.quern.oslogger.example', 'networking');
+const uiLogger = createLogger('com.quern.oslogger.example', 'ui');
 
 export default function App() {
   useEffect(() => {
@@ -24,21 +20,25 @@ export default function App() {
         com.quern.oslogger.example
       </Text>
       <View style={styles.buttons}>
-        <Button title="Log Debug" onPress={() => logDebug('Debug message')} />
-        <Button title="Log Info" onPress={() => logInfo('Info message')} />
-        <Button
-          title="Log Default"
-          onPress={() => logDefault('Default message')}
-        />
-        <Button title="Log Error" onPress={() => logError('Error message')} />
-        <Button title="Log Fault" onPress={() => logFault('Fault message')} />
         <Button
           title="console.log"
           onPress={() => console.log('Hello from console.log', { foo: 42 })}
         />
         <Button
-          title="console.error"
-          onPress={() => console.error('Something broke!')}
+          title="Network: request"
+          onPress={() => netLogger.info('GET /api/users → 200 OK (142ms)')}
+        />
+        <Button
+          title="Network: error"
+          onPress={() => netLogger.error('POST /api/login → 401 Unauthorized')}
+        />
+        <Button
+          title="UI: render"
+          onPress={() => uiLogger.debug('ProfileScreen rendered in 12ms')}
+        />
+        <Button
+          title="UI: interaction"
+          onPress={() => uiLogger.info('User tapped "Save" button')}
         />
       </View>
     </View>

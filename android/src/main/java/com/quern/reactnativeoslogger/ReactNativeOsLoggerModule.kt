@@ -6,30 +6,34 @@ import com.facebook.react.bridge.ReactApplicationContext
 class ReactNativeOsLoggerModule(reactContext: ReactApplicationContext) :
   NativeReactNativeOsLoggerSpec(reactContext) {
 
-  private var tag: String = "ReactNative"
+  private val tags = mutableMapOf<String, String>()
 
-  override fun configure(subsystem: String, category: String) {
-    tag = "$subsystem:$category"
+  private fun tagForKey(key: String): String {
+    return tags[key] ?: "ReactNative"
   }
 
-  override fun logDefault(message: String) {
-    Log.i(tag, message)
+  override fun configureLogger(key: String, subsystem: String, category: String) {
+    tags[key] = "$subsystem:$category"
   }
 
-  override fun logInfo(message: String) {
-    Log.i(tag, message)
+  override fun logDefault(key: String, message: String) {
+    Log.i(tagForKey(key), message)
   }
 
-  override fun logDebug(message: String) {
-    Log.d(tag, message)
+  override fun logInfo(key: String, message: String) {
+    Log.i(tagForKey(key), message)
   }
 
-  override fun logError(message: String) {
-    Log.e(tag, message)
+  override fun logDebug(key: String, message: String) {
+    Log.d(tagForKey(key), message)
   }
 
-  override fun logFault(message: String) {
-    Log.wtf(tag, message)
+  override fun logError(key: String, message: String) {
+    Log.e(tagForKey(key), message)
+  }
+
+  override fun logFault(key: String, message: String) {
+    Log.wtf(tagForKey(key), message)
   }
 
   companion object {
