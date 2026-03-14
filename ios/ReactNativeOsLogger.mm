@@ -2,39 +2,44 @@
 #import <os/log.h>
 
 @implementation ReactNativeOsLogger {
-    os_log_t _logger;
+    NSMutableDictionary<NSString *, NSObject<OS_os_log> *> *_loggers;
 }
 
 - (instancetype)init {
     self = [super init];
     if (self) {
-        _logger = OS_LOG_DEFAULT;
+        _loggers = [NSMutableDictionary new];
     }
     return self;
 }
 
-- (void)configure:(NSString *)subsystem category:(NSString *)category {
-    _logger = os_log_create([subsystem UTF8String], [category UTF8String]);
+- (os_log_t)loggerForKey:(NSString *)key {
+    os_log_t logger = _loggers[key];
+    return logger ?: OS_LOG_DEFAULT;
 }
 
-- (void)logDefault:(NSString *)message {
-    os_log_with_type(_logger, OS_LOG_TYPE_DEFAULT, "%{public}s", [message UTF8String]);
+- (void)configureLogger:(NSString *)key subsystem:(NSString *)subsystem category:(NSString *)category {
+    _loggers[key] = os_log_create([subsystem UTF8String], [category UTF8String]);
 }
 
-- (void)logInfo:(NSString *)message {
-    os_log_with_type(_logger, OS_LOG_TYPE_INFO, "%{public}s", [message UTF8String]);
+- (void)logDefault:(NSString *)key message:(NSString *)message {
+    os_log_with_type([self loggerForKey:key], OS_LOG_TYPE_DEFAULT, "%{public}s", [message UTF8String]);
 }
 
-- (void)logDebug:(NSString *)message {
-    os_log_with_type(_logger, OS_LOG_TYPE_DEBUG, "%{public}s", [message UTF8String]);
+- (void)logInfo:(NSString *)key message:(NSString *)message {
+    os_log_with_type([self loggerForKey:key], OS_LOG_TYPE_INFO, "%{public}s", [message UTF8String]);
 }
 
-- (void)logError:(NSString *)message {
-    os_log_with_type(_logger, OS_LOG_TYPE_ERROR, "%{public}s", [message UTF8String]);
+- (void)logDebug:(NSString *)key message:(NSString *)message {
+    os_log_with_type([self loggerForKey:key], OS_LOG_TYPE_DEBUG, "%{public}s", [message UTF8String]);
 }
 
-- (void)logFault:(NSString *)message {
-    os_log_with_type(_logger, OS_LOG_TYPE_FAULT, "%{public}s", [message UTF8String]);
+- (void)logError:(NSString *)key message:(NSString *)message {
+    os_log_with_type([self loggerForKey:key], OS_LOG_TYPE_ERROR, "%{public}s", [message UTF8String]);
+}
+
+- (void)logFault:(NSString *)key message:(NSString *)message {
+    os_log_with_type([self loggerForKey:key], OS_LOG_TYPE_FAULT, "%{public}s", [message UTF8String]);
 }
 
 - (std::shared_ptr<facebook::react::TurboModule>)getTurboModule:

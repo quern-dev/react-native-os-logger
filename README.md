@@ -61,16 +61,27 @@ logInfo('App started');
 logError('Something went wrong');
 ```
 
-### Using createLogger
+### Multiple loggers with different categories
+
+Each `createLogger` call creates a separate `os_log_t` (iOS) or `Log` tag (Android), so you can filter by category independently:
 
 ```typescript
 import { createLogger } from '@quern/react-native-os-logger';
 
-const logger = createLogger('com.myapp', 'networking');
+const netLogger = createLogger('com.myapp', 'networking');
+const uiLogger = createLogger('com.myapp', 'ui');
 
-logger.debug('Request started');
-logger.info('Response received');
-logger.error('Request failed');
+netLogger.info('GET /api/users → 200 OK');
+netLogger.error('POST /api/login → 401');
+
+uiLogger.debug('ProfileScreen rendered in 12ms');
+uiLogger.info('User tapped "Save" button');
+```
+
+Filter in Console.app:
+```sh
+# Just networking logs
+log stream --predicate 'subsystem == "com.myapp" AND category == "networking"'
 ```
 
 ### Log levels
@@ -113,7 +124,7 @@ Configure the logger with a reverse-DNS subsystem identifier and a category. Cal
 
 ### `createLogger(subsystem: string, category: string): Logger`
 
-Returns an object with `default`, `info`, `debug`, `error`, `fault`, and `log` methods.
+Creates a new logger with its own `os_log_t` (iOS) / `Log` tag (Android). Returns an object with `default`, `info`, `debug`, `error`, `fault`, and `log` methods. Multiple loggers can coexist with different categories.
 
 ### `patchConsole(subsystem: string, category?: string): void`
 
