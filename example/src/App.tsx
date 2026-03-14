@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Text, View, StyleSheet, Button } from 'react-native';
 import {
-  configure,
+  patchConsole,
   logDefault,
   logInfo,
   logDebug,
@@ -9,10 +9,11 @@ import {
   logFault,
 } from '@quern/react-native-os-logger';
 
+patchConsole('com.quern.oslogger.example', 'console');
+
 export default function App() {
   useEffect(() => {
-    configure('com.quern.oslogger.example', 'js');
-    logDefault('App mounted');
+    console.log('App mounted');
   }, []);
 
   return (
@@ -31,6 +32,14 @@ export default function App() {
         />
         <Button title="Log Error" onPress={() => logError('Error message')} />
         <Button title="Log Fault" onPress={() => logFault('Fault message')} />
+        <Button
+          title="console.log"
+          onPress={() => console.log('Hello from console.log', { foo: 42 })}
+        />
+        <Button
+          title="console.error"
+          onPress={() => console.error('Something broke!')}
+        />
       </View>
     </View>
   );

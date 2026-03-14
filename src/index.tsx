@@ -92,3 +92,70 @@ export function createLogger(subsystem: string, category: string) {
     log,
   };
 }
+
+function argsToString(args: unknown[]): string {
+  return args
+    .map((arg) => {
+      if (typeof arg === 'string') return arg;
+      if (arg instanceof Error) return `${arg.message}\n${arg.stack}`;
+      try {
+        return JSON.stringify(arg);
+      } catch {
+        return String(arg);
+      }
+    })
+    .join(' ');
+}
+
+let patched = false;
+
+/**
+ * Patch console.log/info/debug/warn/error to route through os_log.
+ * Original console methods are preserved — logs still appear in Metro.
+ * Call once at app startup.
+ *
+ * @param subsystem - Reverse-DNS identifier (e.g. "com.myapp")
+ * @param category - Log category (defaults to "console")
+ */
+export function patchConsole(
+  subsystem: string,
+  category: string = 'console'
+): void {
+  if (patched) return;
+  patched = true;
+
+  if (!configured) {
+    configure(subsystem, category);
+  }
+
+  const originalLog = console.log;
+  const originalInfo = console.info;
+  const originalDebug = console.debug;
+  const originalWarn = console.warn;
+  const originalError = console.error;
+
+  console.log = (...args: unknown[]) => {
+    originalLog.apply(console, args);
+    logDefault(argsToString(args));
+  };
+
+  console.info = (...args: unknown[]) => {
+    originalInfo.apply(console, args);
+    logInfo(argsToString(args));
+  };
+
+  console.debug = (...args: unknown[]) => {
+    originalDebug.apply(console, args);
+    logDebug(argsToString(args));
+  };
+
+  console.warn = (...args: unknown[]) => {
+    originalWarn.apply(console, args);
+    logError(argsToString(args));
+  };
+
+  console.error = (...args: unknown[]) => {
+    originalError.apply(console, args);
+    logError(argsToString(args));
+  };
+}
